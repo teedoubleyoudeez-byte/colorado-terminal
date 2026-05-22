@@ -3,186 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Terminal</title>
+    <title>Colorado OS Console V3 // CODE SKULL</title>
     <style>
         :root {
-            --bg-color: #050505;
-            --panel-bg: #111111;
+            --bg-color: #000000;
+            --panel-bg: rgba(10, 10, 10, 0.9);
             --text-color: #e0e0e0;
-            --accent-blue: #00bfff;
             --accent-green: #00ff33;
+            --accent-blue: #00bfff;
             --accent-amber: #ffaa00;
+            --matrix-font: 'Courier New', Courier, monospace;
         }
-        body {
+        body, html {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Courier New', Courier, monospace;
+            font-family: var(--matrix-font);
             margin: 0;
-            padding: 10px;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        #console-wrapper {
+            position: relative;
+            width: 90vw;
+            height: 85vh;
+            background: var(--panel-bg);
+            border: 2px solid #222;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 51, 0.2);
+            z-index: 10;
             display: flex;
             flex-direction: column;
-            height: 95vh;
-            box-sizing: border-box;
+            overflow: hidden;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+        #console-wrapper.dimmed {
+            opacity: 0.15; /* Dims the console when skull is forming */
         }
         #header {
             text-align: center;
+            font-size: 1.2em;
             font-weight: bold;
-            color: var(--text-color);
-            padding-bottom: 10px;
+            color: var(--accent-green);
+            padding: 15px;
             border-bottom: 1px solid #333;
-            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
         }
         #chat-box {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 15px;
-            background: var(--panel-bg);
-            border: 1px solid #333;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 20px;
         }
         .message {
-            margin-bottom: 15px;
-            line-height: 1.5;
-            word-wrap: break-word;
+            margin-bottom: 20px;
+            line-height: 1.6;
         }
+        .sys-msg { color: var(--accent-amber); font-style: italic; }
         .user-msg { color: var(--accent-blue); }
-        .sys-msg { color: var(--accent-amber); font-size: 0.9em; font-style: italic; }
-        .ai-msg { color: var(--accent-green); white-space: pre-wrap;}
+        .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
         #input-area {
             display: flex;
-            gap: 10px;
+            padding: 15px;
+            background: rgba(20, 20, 20, 0.9);
+            border-top: 1px solid #333;
+            gap: 15px;
         }
         input[type="text"] {
             flex-grow: 1;
             padding: 15px;
-            font-size: 18px;
-            background: #222;
+            font-size: 1.1em;
+            background: #000;
             color: #fff;
             border: 1px solid #444;
             border-radius: 8px;
+            font-family: var(--matrix-font);
         }
         input[type="text"]:focus {
             outline: none;
-            border-color: var(--accent-blue);
+            border-color: var(--accent-green);
         }
         button {
-            padding: 15px 25px;
-            font-size: 18px;
-            background: var(--accent-blue);
+            padding: 15px 30px;
+            font-size: 1.1em;
+            background: var(--accent-green);
             color: #000;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
         }
-        button:active {
-            background: #008ccc;
-        }
     </style>
 </head>
 <body>
 
-    <div id="header">COLORADO ONBOARD OS // AI TERMINAL</div>
-    
-    <div id="chat-box">
-        <div class="message sys-msg">System initialized. Awaiting command. (Prefix with '?' for Tavily live web search).</div>
+    <canvas id="matrix-canvas"></canvas>
+
+    <div id="console-wrapper">
+        <div id="header">COLORADO ONBOARD OS // terminal_v3</div>
+        <div id="chat-box">
+            <div class="message sys-msg">System online. Code Skull visual protocol active.</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="command-input" placeholder="Enter command or '?' for web search..." autocomplete="off">
+            <button onclick="processCommand()">EXECUTE</button>
+        </div>
     </div>
 
-    <div id="input-area">
-        <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
-        <button onclick="processCommand()">EXECUTE</button>
-    </div>
+<script>
+    // ==========================================
+    // THE GRAPHICAL ENGINE (V3 - CODE SKULL)
+    // ==========================================
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    const consoleWrapper = document.getElementById('console-wrapper');
+    const chatBox = document.getElementById('chat-box');
+    const inputField = document.getElementById('command-input');
 
-    <script>
-        // === PASTE YOUR API KEYS HERE ===
-        const GEMINI_KEY = "AIzaSyAginE_6mRNF53geVQzRZ3bDTKJHOeHs_Q";
-        const TAVILY_KEY = "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";
-        
-        const chatBox = document.getElementById('chat-box');
-        const inputField = document.getElementById('command-input');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
 
-        inputField.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                processCommand();
+    // Define the matrix characters (Classic + custom)
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?><{}[]';
+    const matrixChars = characters.split('');
+    const fontSize = 16;
+    const columns = Math.floor(width / fontSize);
+
+    // Initial rain data
+    let drops = [];
+    for(let i = 0; i < columns; i++) {
+        drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 };
+    }
+
+    // THE SETTLED CHARACTER ARRAY (The physics state)
+    let settledPoints = []; 
+
+    // Define the destination ASCII Skull map (Simplified for collision performance)
+    const skullMap = [
+        "      <$$$$$$$>      ",
+        "    <$$$$$$$$$$$>    ",
+        "   <$$$$$ ? $$$$$>   ",
+        "  <$$$$$     $$$$$>  ",
+        "  $$$$$$$   $$$$$$$  ",
+        "  $$$$$$$   $$$$$$$  ",
+        "  $$$$$$$$ $$$$$$$$  ",
+        "   <$$$$$ + $$$$$>   ",
+        "    $$$$$$ $$$$$$    ",
+        "     $$$ $$$ $$$     ",
+        "      $$$$ $$$$      ",
+        "       $$$$$$$       "
+    ];
+
+    // Convert skullMap to world-coordinates (X, Y points)
+    const skullTargetPoints = [];
+    const skullScale = 1.6; // Scale up for vertical dashboard
+    const mapWidth = skullMap[0].length;
+    const mapHeight = skullMap.length;
+    const startX = (width - mapWidth * fontSize * skullScale) / 2;
+    const startY = (height - mapHeight * fontSize * skullScale) / 2;
+
+    for (let y = 0; y < mapHeight; y++) {
+        for (let x = 0; x < mapWidth; x++) {
+            if (skullMap[y][x] !== " ") {
+                skullTargetPoints.push({
+                    tx: startX + x * fontSize * skullScale,
+                    ty: startY + y * fontSize * skullScale,
+                    occupied: false
+                });
             }
-        });
-
-        function appendMessage(role, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${role}-msg`;
-            msgDiv.textContent = role === 'user' ? `> ${text}` : text;
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
+    }
 
-        async function processCommand() {
-            const rawInput = inputField.value.trim();
-            if (!rawInput) return;
-            
-            appendMessage('user', rawInput);
-            inputField.value = '';
-            
-            let finalPrompt = rawInput;
-            let useWebSearch = rawInput.startsWith('?');
-            
-            if (useWebSearch) {
-                const searchQuery = rawInput.substring(1).trim();
-                appendMessage('sys', '[Network] Querying Tavily live web data...');
-                
-                try {
-                    const tavilyRes = await fetch('https://api.tavily.com/search', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            api_key: TAVILY_KEY,
-                            query: searchQuery,
-                            search_depth: "basic",
-                            include_answer: false
-                        })
-                    });
+    // Idle Timer (Reset on user interaction)
+    let idleTimer;
+    let systemIdle = false;
+
+    function resetIdleTimer() {
+        systemIdle = false;
+        consoleWrapper.classList.remove('dimmed');
+        settledPoints = []; // Nuke the skull when the system wakes up
+        clearTimeout(idleTimer);
+        // 20 seconds of inactivity triggers the skull
+        idleTimer = setTimeout(() => {
+            systemIdle = true;
+            consoleWrapper.classList.add('dimmed');
+        }, 20000); 
+    }
+
+    // Capture user events for the idle timer
+    window.addEventListener('mousemove', resetIdleTimer);
+    window.addEventListener('touchstart', resetIdleTimer);
+    window.addEventListener('keypress', resetIdleTimer);
+    inputField.addEventListener('focus', resetIdleTimer);
+    resetIdleTimer(); // Initial run
+
+    // The core draw loop
+    function draw() {
+        // Subtle background fade (Trailing effect)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < drops.length; i++) {
+            let drop = drops[i];
+            const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+
+            // Draw the falling rain
+            ctx.fillStyle = 'rgba(0, 255, 51, 0.8)'; // Green
+            ctx.fillText(char, drop.x, drop.y);
+
+            // Physics calculation: If system is idle, check for settling
+            if (systemIdle) {
+                for (let p = 0; p < skullTargetPoints.length; p++) {
+                    let point = skullTargetPoints[p];
                     
-                    if (!tavilyRes.ok) throw new Error("Tavily API failed");
-                    
-                    const tavilyData = await tavilyRes.json();
-                    const webContext = tavilyData.results.map(r => r.content).join('\n');
-                    finalPrompt = `Based on the following live web search results:\n\n${webContext}\n\nAnswer this prompt: ${searchQuery}`;
-                    
-                } catch (error) {
-                    appendMessage('sys', `[Error] Tavily Search Failed: ${error.message}`);
-                    return;
+                    // Collision Detection (If drop hits an unoccupied target point)
+                    if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
+                        
+                        // Settle the character
+                        point.occupied = true;
+                        settledPoints.push({
+                            char: char,
+                            x: point.tx,
+                            y: point.ty,
+                            color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' // Rare amber spark
+                        });
+
+                        // Reset the rain drop to top
+                        drop.y = Math.random() * 100 * -1;
+                    }
                 }
             }
 
-            appendMessage('sys', '[System] Processing via Gemini 2.5 Flash...');
-
-            const systemInstruction = "You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead.";
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-            
-            const geminiBody = {
-                system_instruction: { parts: [{ text: systemInstruction }] },
-                contents: [{ parts: [{ text: finalPrompt }] }]
-            };
-
-            try {
-                const geminiRes = await fetch(geminiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(geminiBody)
-                });
-
-                if (!geminiRes.ok) throw new Error("Gemini API failed");
-
-                const geminiData = await geminiRes.json();
-                const aiText = geminiData.candidates[0].content.parts[0].text;
-                
-                appendMessage('ai', aiText);
-                
-            } catch (error) {
-                appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+            // Normal rain movement
+            drop.y += drop.speed;
+            if (drop.y > height) {
+                drop.y = Math.random() * 100 * -1;
             }
         }
-    </script>
+
+        // DRAW THE SETTLED CHARACTERS (The Skull)
+        for (let s = 0; s < settledPoints.length; s++) {
+            const p = settledPoints[s];
+            ctx.fillStyle = p.color;
+            ctx.fillText(p.char, p.x, p.y);
+        }
+    }
+
+    // Execute at 30 FPS to reduce heat on the head unit
+    setInterval(draw, 33); 
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+
+    // ==========================================
+    // THE AI LOGIC (Unchanged from V2)
+    // ==========================================
+    // === INSERT API KEYS HERE ===
+    const GEMINI_KEY = 'AIzaSyAginE_6mRNF53geVQzRZ3bDTKJHOeHs_Q';
+    const TAVILY_KEY = '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';
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${role}-msg`;
+        msgDiv.textContent = role === 'user' ? `> ${text}` : text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        resetIdleTimer(); // Wake system up if AI speaks
+    }
+
+    inputField.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            processCommand();
+        }
+    });
+
+    async function processCommand() {
+        const rawInput = inputField.value.trim();
+        if (!rawInput) return;
+        
+        appendMessage('user', rawInput);
+        inputField.value = '';
+        
+        let finalPrompt = rawInput;
+        let useWebSearch = rawInput.startsWith('?');
+        
+        if (useWebSearch) {
+            const searchQuery = rawInput.substring(1).trim();
+            appendMessage('sys', '[Network] Querying Tavily live web data...');
+            
+            try {
+                const tavilyRes = await fetch('https://api.tavily.com/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_key: TAVILY_KEY,
+                        query: searchQuery,
+                        search_depth: "basic",
+                        include_answer: false
+                    })
+                });
+                
+                if (!tavilyRes.ok) throw new Error("Tavily API failed");
+                
+                const tavilyData = await tavilyRes.json();
+                const webContext = tavilyData.results.map(r => r.content).join('\n');
+                finalPrompt = `Based on the following live web search results:\n\n${webContext}\n\nAnswer this prompt: ${searchQuery}`;
+                
+            } catch (error) {
+                appendMessage('sys', `[Error] Tavily Search Failed: ${error.message}`);
+                return;
+            }
+        }
+
+        appendMessage('sys', '[System] Processing via Gemini 2.5 Flash...');
+
+        const systemInstruction = "You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead.";
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+        
+        const geminiBody = {
+            system_instruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ parts: [{ text: finalPrompt }] }]
+        };
+
+        try {
+            const geminiRes = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geminiBody)
+            });
+
+            if (!geminiRes.ok) throw new Error("Gemini API failed");
+
+            const geminiData = await geminiRes.json();
+            const aiText = geminiData.candidates[0].content.parts[0].text;
+            
+            appendMessage('ai', aiText);
+            
+        } catch (error) {
+            appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+        }
+    }
+</script>
 </body>
 </html>
