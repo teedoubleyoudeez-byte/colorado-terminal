@@ -336,7 +336,7 @@
 
         const systemInstruction = `You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead. You have access to the vehicle's live OBD2 data. The current raw Torque Pro PID parameters are: ${truckContext}. (Note: k5 is Coolant Temp in Celsius, kc is Engine RPM, kd is Speed in km/h. Convert to Fahrenheit and MPH in your responses).`;
         
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+        const geminiUrl = `const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}';`;
         
         const geminiBody = {
             system_instruction: { parts: [{ text: systemInstruction }] },
@@ -344,22 +344,33 @@
         };
 
         try {
-            const geminiRes = await fetch(geminiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(geminiBody)
-            });
+        const geminiRes = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geminiBody)
+        });
 
-            if (!geminiRes.ok) throw new Error("Gemini API failed");
-
-            const geminiData = await geminiRes.json();
-            const aiText = geminiData.candidates[0].content.parts[0].text;
-            
-            appendMessage('ai', aiText);
-            
-        } catch (error) {
-            appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+        // --- NEW DIAGNOSTIC BLOCK ---
+        if (!geminiRes.ok) {
+            let errorMsg = `HTTP ${geminiRes.status}`;
+            try {
+                const errData = await geminiRes.json();
+                errorMsg += ` - ${errData.error.message}`;
+            } catch (e) {
+                errorMsg += ` - Unknown Server Rejection`;
+            }
+            throw new Error(errorMsg);
         }
+        // ----------------------------
+
+        const geminiData = await geminiRes.json();
+        const aiText = geminiData.candidates[0].content.parts[0].text;
+        
+        appendMessage('ai', aiText);
+        
+    } catch (error) {
+        appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+    }
     }
 </script>
 </body>
