@@ -1,135 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V4 // TELEMETRY LINK</title>
-    <style>
-        :root {
-            --bg-color: #000000;
-            --panel-bg: rgba(10, 10, 10, 0.9);
-            --text-color: #e0e0e0;
-            --accent-green: #00ff33;
-            --accent-blue: #00bfff;
-            --accent-amber: #ffaa00;
-            --matrix-font: 'Courier New', Courier, monospace;
-        }
-        body, html {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--matrix-font);
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1;
-        }
-        #console-wrapper {
-            position: relative;
-            width: 90vw;
-            height: 85vh;
-            background: var(--panel-bg);
-            border: 2px solid #222;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(0, 255, 51, 0.2);
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            opacity: 1;
-            transition: opacity 1s ease;
-        }
-        #console-wrapper.dimmed {
-            opacity: 0.15;
-        }
-        #header {
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--accent-green);
-            padding: 15px;
-            border-bottom: 1px solid #333;
-            text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
-        }
-        #chat-box {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .message {
-            margin-bottom: 20px;
-            line-height: 1.6;
-            word-wrap: break-word;
-        }
-        .sys-msg { color: var(--accent-amber); font-style: italic; }
-        .user-msg { color: var(--accent-blue); }
-        .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
-        #input-area {
-            display: flex;
-            padding: 15px;
-            background: rgba(20, 20, 20, 0.9);
-            border-top: 1px solid #333;
-            gap: 15px;
-        }
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 15px;
-            font-size: 1.1em;
-            background: #000;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            font-family: var(--matrix-font);
-        }
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--accent-green);
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 1.1em;
-            background: var(--accent-green);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button:active {
-            background: #00cc29;
-        }
-    </style>
-</head>
-<body>
-
-    <canvas id="matrix-canvas"></canvas>
-
-    <div id="console-wrapper">
-        <div id="header">COLORADO ONBOARD OS // terminal_v4</div>
-        <div id="chat-box">
-            <div class="message sys-msg">System online. Code Skull visual protocol active. Telemetry bridge standing by. (Prefix with '?' for live web search).</div>
-        </div>
-        <div id="input-area">
-            <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
-            <button onclick="processCommand()">EXECUTE</button>
-        </div>
-    </div>
-
 <script>
     // ==========================================
-    // API CONFIGURATION (FILL THESE IN)
+    // API CONFIGURATION (GROQ MIGRATION)
     // ==========================================
-    const GEMINI_KEY = "AIzaSyAt4NGn_Sp8XNiHyTGcQX3Cx-AeJViXLUg";
+    const GROQ_KEY = "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";
     const TAVILY_KEY = "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";
     const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbymH_5fj7eVuurl2DGtiWBzydBI0riIR8HUDOIX_FrMxeEY6VV5IJDukNtmSy9XOGy7/exec"; 
 
@@ -332,45 +205,51 @@
             appendMessage('sys', '[Warning] Telemetry Bridge unreachable.');
         }
 
-        appendMessage('sys', '[System] Processing via Gemini 2.5 Flash...');
+        appendMessage('sys', '[System] Processing via Groq LPU Network (Llama 3)...');
 
         const systemInstruction = `You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead. You have access to the vehicle's live OBD2 data. The current raw Torque Pro PID parameters are: ${truckContext}. (Note: k5 is Coolant Temp in Celsius, kc is Engine RPM, kd is Speed in km/h. Convert to Fahrenheit and MPH in your responses).`;
         
-const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`; 
-        const geminiBody = {
-            system_instruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ parts: [{ text: finalPrompt }] }]
+        // GROQ API ENDPOINT AND PAYLOAD
+        const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
+        
+        const groqBody = {
+            model: "llama-3.1-8b-instant",
+            messages: [
+                { role: "system", content: systemInstruction },
+                { role: "user", content: finalPrompt }
+            ]
         };
 
         try {
-        const geminiRes = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody)
-        });
+            const groqRes = await fetch(groqUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GROQ_KEY}`
+                },
+                body: JSON.stringify(groqBody)
+            });
 
-        // --- NEW DIAGNOSTIC BLOCK ---
-        if (!geminiRes.ok) {
-            let errorMsg = `HTTP ${geminiRes.status}`;
-            try {
-                const errData = await geminiRes.json();
-                errorMsg += ` - ${errData.error.message}`;
-            } catch (e) {
-                errorMsg += ` - Unknown Server Rejection`;
+            // DIAGNOSTIC ERROR HANDLER
+            if (!groqRes.ok) {
+                let errorMsg = `HTTP ${groqRes.status}`;
+                try {
+                    const errData = await groqRes.json();
+                    errorMsg += ` - ${errData.error.message}`;
+                } catch (e) {
+                    errorMsg += ` - Unknown Server Rejection`;
+                }
+                throw new Error(errorMsg);
             }
-            throw new Error(errorMsg);
-        }
-        // ----------------------------
 
-        const geminiData = await geminiRes.json();
-        const aiText = geminiData.candidates[0].content.parts[0].text;
-        
-        appendMessage('ai', aiText);
-        
-    } catch (error) {
-        appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
-    }
+            // EXTRACT Llama 3 RESPONSE
+            const groqData = await groqRes.json();
+            const aiText = groqData.choices[0].message.content;
+            
+            appendMessage('ai', aiText);
+            
+        } catch (error) {
+            appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+        }
     }
 </script>
-</body>
-</html>
