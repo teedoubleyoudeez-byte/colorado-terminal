@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorado OS Terminal</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #111111;
+            --text-color: #e0e0e0;
+            --accent-blue: #00bfff;
+            --accent-green: #00ff33;
+            --accent-amber: #ffaa00;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 95vh;
+            box-sizing: border-box;
+        }
+        #header {
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-color);
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 10px;
+        }
+        #chat-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: var(--panel-bg);
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 15px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .user-msg { color: var(--accent-blue); }
+        .sys-msg { color: var(--accent-amber); font-size: 0.9em; font-style: italic; }
+        .ai-msg { color: var(--accent-green); white-space: pre-wrap;}
+        #input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 15px;
+            font-size: 18px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            background: var(--accent-blue);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active {
+            background: #008ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">COLORADO ONBOARD OS // AI TERMINAL</div>
+    
+    <div id="chat-box">
+        <div class="message sys-msg">System initialized. Awaiting command. (Prefix with '?' for Tavily live web search).</div>
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
+        <button onclick="processCommand()">EXECUTE</button>
+    </div>
+
+    <script>
+        // === PASTE YOUR API KEYS HERE ===
+        const GEMINI_KEY = AIzaSyBvnwqpzw4aDNpL8xEDK31JgWNSpBAOD68;
+        const TAVILY_KEY = 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;
+        
+        const chatBox = document.getElementById('chat-box');
+        const inputField = document.getElementById('command-input');
+
+        inputField.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                processCommand();
+            }
+        });
+
+        function appendMessage(role, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}-msg`;
+            msgDiv.textContent = role === 'user' ? `> ${text}` : text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function processCommand() {
+            const rawInput = inputField.value.trim();
+            if (!rawInput) return;
+            
+            appendMessage('user', rawInput);
+            inputField.value = '';
+            
+            let finalPrompt = rawInput;
+            let useWebSearch = rawInput.startsWith('?');
+            
+            if (useWebSearch) {
+                const searchQuery = rawInput.substring(1).trim();
+                appendMessage('sys', '[Network] Querying Tavily live web data...');
+                
+                try {
+                    const tavilyRes = await fetch('https://api.tavily.com/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            api_key: TAVILY_KEY,
+                            query: searchQuery,
+                            search_depth: "basic",
+                            include_answer: false
+                        })
+                    });
+                    
+                    if (!tavilyRes.ok) throw new Error("Tavily API failed");
+                    
+                    const tavilyData = await tavilyRes.json();
+                    const webContext = tavilyData.results.map(r => r.content).join('\n');
+                    finalPrompt = `Based on the following live web search results:\n\n${webContext}\n\nAnswer this prompt: ${searchQuery}`;
+                    
+                } catch (error) {
+                    appendMessage('sys', `[Error] Tavily Search Failed: ${error.message}`);
+                    return;
+                }
+            }
+
+            appendMessage('sys', '[System] Processing via Gemini 2.5 Flash...');
+
+            const systemInstruction = "You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead.";
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+            
+            const geminiBody = {
+                system_instruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ parts: [{ text: finalPrompt }] }]
+            };
+
+            try {
+                const geminiRes = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(geminiBody)
+                });
+
+                if (!geminiRes.ok) throw new Error("Gemini API failed");
+
+                const geminiData = await geminiRes.json();
+                const aiText = geminiData.candidates[0].content.parts[0].text;
+                
+                appendMessage('ai', aiText);
+                
+            } catch (error) {
+                appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
