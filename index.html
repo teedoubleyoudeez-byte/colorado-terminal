@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V6 // SECURE PROXY</title>
+    <title>Colorado OS Console V7 // VOICE & SKULL</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -69,7 +69,7 @@
             padding: 15px;
             background: rgba(20, 20, 20, 0.9);
             border-top: 1px solid #333;
-            gap: 15px;
+            gap: 10px;
         }
         input[type="text"] {
             flex-grow: 1;
@@ -83,7 +83,7 @@
         }
         input[type="text"]:focus { outline: none; border-color: var(--accent-green); }
         button {
-            padding: 15px 30px;
+            padding: 15px 20px;
             font-size: 1.1em;
             background: var(--accent-green);
             color: #000;
@@ -91,8 +91,23 @@
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
+            transition: background 0.2s;
         }
         button:active { background: #00cc29; }
+        #mic-btn {
+            background: var(--accent-blue);
+            font-size: 1.2em;
+        }
+        #mic-btn.listening {
+            background: #ff0000; /* Turns red when active so you know it's hot */
+            color: white;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -100,25 +115,27 @@
     <canvas id="matrix-canvas"></canvas>
 
     <div id="console-wrapper">
-        <div id="header">COLORADO ONBOARD OS // terminal_v6_proxy</div>
+        <div id="header">COLORADO ONBOARD OS // terminal_v7</div>
         <div id="chat-box">
-            <div class="message sys-msg">System online. Secure Proxy routing active. Keys hidden. Telemetry standing by.</div>
+            <div class="message sys-msg">System online. Voice engine loaded. OBD2 connection and telemetry enabled.</div>
         </div>
         <div id="input-area">
-            <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
+            <input type="text" id="command-input" placeholder="Enter command or tap mic..." autocomplete="off">
+            <button id="mic-btn" onclick="startVoice()">🎙️</button>
             <button onclick="processCommand()">EXECUTE</button>
         </div>
     </div>
 
 <script>
     // ==========================================
-    // THE GRAPHICAL ENGINE (CODE SKULL)
+    // THE GRAPHICAL ENGINE (GIANT SKULL)
     // ==========================================
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
     const consoleWrapper = document.getElementById('console-wrapper');
     const chatBox = document.getElementById('chat-box');
     const inputField = document.getElementById('command-input');
+    const micBtn = document.getElementById('mic-btn');
 
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
@@ -129,22 +146,20 @@
     for(let i = 0; i < columns; i++) { drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 }; }
 
     let settledPoints = []; 
+    // NEW MASSIVE BLOCKY SKULL MAP
     const skullMap = [
-        "      <$$$$$$$>      ",
-        "    <$$$$$$$$$$$>    ",
-        "   <$$$$$ ? $$$$$>   ",
-        "  <$$$$$     $$$$$>  ",
-        "  $$$$$$$   $$$$$$$  ",
-        "  $$$$$$$   $$$$$$$  ",
-        "  $$$$$$$$ $$$$$$$$  ",
-        "   <$$$$$ + $$$$$>   ",
-        "    $$$$$$ $$$$$$    ",
-        "     $$$ $$$ $$$     ",
-        "      $$$$ $$$$      ",
-        "       $$$$$$$       "
+        "    $$$$$$$$    ",
+        "  $$$$$$$$$$$$  ",
+        " $$$$$$$$$$$$$$ ",
+        " $$  $$$$$$  $$ ",
+        " $$  $$$$$$  $$ ",
+        " $$$$$$$$$$$$$$ ",
+        "  $$$$$$$$$$$$  ",
+        "    $$ $$ $$    ",
+        "    $$ $$ $$    "
     ];
     const skullTargetPoints = [];
-    const skullScale = 1.6; 
+    const skullScale = 2.5; // CRANKED UP FOR HIGH VISIBILITY
     const mapWidth = skullMap[0].length;
     const mapHeight = skullMap.length;
     const startX = (width - mapWidth * fontSize * skullScale) / 2;
@@ -166,7 +181,7 @@
         settledPoints = []; 
         skullTargetPoints.forEach(p => p.occupied = false); 
         clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => { systemIdle = true; consoleWrapper.classList.add('dimmed'); }, 20000); 
+        idleTimer = setTimeout(() => { systemIdle = true; consoleWrapper.classList.add('dimmed'); }, 15000); 
     }
 
     ['mousemove', 'touchstart', 'keypress'].forEach(e => window.addEventListener(e, resetIdleTimer));
@@ -206,6 +221,47 @@
     window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
 
     // ==========================================
+    // VOICE RECOGNITION ENGINE
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    function startVoice() {
+        resetIdleTimer();
+        if (!SpeechRecognition) {
+            appendMessage('sys', '[Error] Voice API blocked or not supported by this browser.');
+            return;
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        
+        recognition.onstart = function() {
+            micBtn.classList.add('listening');
+            inputField.placeholder = "Listening...";
+        };
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            inputField.value = transcript;
+            processCommand(); // Auto-fires when you finish speaking
+        };
+        
+        recognition.onerror = function(event) {
+            appendMessage('sys', `[Mic Error] ${event.error}`);
+            micBtn.classList.remove('listening');
+            inputField.placeholder = "Enter command or tap mic...";
+        };
+        
+        recognition.onend = function() {
+            micBtn.classList.remove('listening');
+            inputField.placeholder = "Enter command or tap mic...";
+        };
+        
+        recognition.start();
+    }
+
+    // ==========================================
     // THE DUMB TERMINAL SECURE API LOGIC
     // ==========================================
     // PASTE YOUR GOOGLE SCRIPT WEB APP URL HERE.
@@ -236,7 +292,6 @@
         appendMessage('sys', '[Network] Pinging Secure Cloud Proxy...');
 
         try {
-            // We send it as text/plain to bypass strict browser CORS rules
             const response = await fetch(MASTER_PROXY_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
