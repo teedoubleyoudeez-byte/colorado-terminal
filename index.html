@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V5 // GROQ LPU</title>
+    <title>Colorado OS Console V6 // SECURE PROXY</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -49,9 +49,7 @@
             opacity: 1;
             transition: opacity 1s ease;
         }
-        #console-wrapper.dimmed {
-            opacity: 0.15;
-        }
+        #console-wrapper.dimmed { opacity: 0.15; }
         #header {
             text-align: center;
             font-size: 1.2em;
@@ -61,16 +59,8 @@
             border-bottom: 1px solid #333;
             text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
         }
-        #chat-box {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .message {
-            margin-bottom: 20px;
-            line-height: 1.6;
-            word-wrap: break-word;
-        }
+        #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .message { margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; }
         .sys-msg { color: var(--accent-amber); font-style: italic; }
         .user-msg { color: var(--accent-blue); }
         .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
@@ -91,10 +81,7 @@
             border-radius: 8px;
             font-family: var(--matrix-font);
         }
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--accent-green);
-        }
+        input[type="text"]:focus { outline: none; border-color: var(--accent-green); }
         button {
             padding: 15px 30px;
             font-size: 1.1em;
@@ -105,9 +92,7 @@
             font-weight: bold;
             cursor: pointer;
         }
-        button:active {
-            background: #00cc29;
-        }
+        button:active { background: #00cc29; }
     </style>
 </head>
 <body>
@@ -115,9 +100,9 @@
     <canvas id="matrix-canvas"></canvas>
 
     <div id="console-wrapper">
-        <div id="header">COLORADO ONBOARD OS // terminal_v5_groq</div>
+        <div id="header">COLORADO ONBOARD OS // terminal_v6_proxy</div>
         <div id="chat-box">
-            <div class="message sys-msg">System online. Code Skull visual protocol active. Telemetry bridge standing by. (Prefix with '?' for live web search).</div>
+            <div class="message sys-msg">System online. Secure Proxy routing active. Keys hidden. Telemetry standing by.</div>
         </div>
         <div id="input-area">
             <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
@@ -126,14 +111,6 @@
     </div>
 
 <script>
-    // ==========================================
-    // API CONFIGURATION (GROQ MIGRATION)
-    // ==========================================
-    // DO NOT USE YOUR OLD COMPROMISED KEYS. GENERATE NEW ONES.
-    const GROQ_KEY = "YOUR_NEW_GROQ_KEY_HERE";
-    const TAVILY_KEY = "YOUR_NEW_TAVILY_KEY_HERE";
-    const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbymH_5fj7eVuurl2DGtiWBzydBI0riIR8HUDOIX_FrMxeEY6VV5IJDukNtmSy9XOGy7/exec"; 
-
     // ==========================================
     // THE GRAPHICAL ENGINE (CODE SKULL)
     // ==========================================
@@ -145,19 +122,13 @@
 
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
-
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?><{}[]';
-    const matrixChars = characters.split('');
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?><{}[]'.split('');
     const fontSize = 16;
-    const columns = Math.floor(width / fontSize);
-
+    let columns = Math.floor(width / fontSize);
     let drops = [];
-    for(let i = 0; i < columns; i++) {
-        drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 };
-    }
+    for(let i = 0; i < columns; i++) { drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 }; }
 
     let settledPoints = []; 
-
     const skullMap = [
         "      <$$$$$$$>      ",
         "    <$$$$$$$$$$$>    ",
@@ -172,7 +143,6 @@
         "      $$$$ $$$$      ",
         "       $$$$$$$       "
     ];
-
     const skullTargetPoints = [];
     const skullScale = 1.6; 
     const mapWidth = skullMap[0].length;
@@ -183,34 +153,23 @@
     for (let y = 0; y < mapHeight; y++) {
         for (let x = 0; x < mapWidth; x++) {
             if (skullMap[y][x] !== " ") {
-                skullTargetPoints.push({
-                    tx: startX + x * fontSize * skullScale,
-                    ty: startY + y * fontSize * skullScale,
-                    occupied: false
-                });
+                skullTargetPoints.push({ tx: startX + x * fontSize * skullScale, ty: startY + y * fontSize * skullScale, occupied: false });
             }
         }
     }
 
     let idleTimer;
     let systemIdle = false;
-
     function resetIdleTimer() {
         systemIdle = false;
         consoleWrapper.classList.remove('dimmed');
         settledPoints = []; 
         skullTargetPoints.forEach(p => p.occupied = false); 
         clearTimeout(idleTimer);
-        
-        idleTimer = setTimeout(() => {
-            systemIdle = true;
-            consoleWrapper.classList.add('dimmed');
-        }, 20000); 
+        idleTimer = setTimeout(() => { systemIdle = true; consoleWrapper.classList.add('dimmed'); }, 20000); 
     }
 
-    window.addEventListener('mousemove', resetIdleTimer);
-    window.addEventListener('touchstart', resetIdleTimer);
-    window.addEventListener('keypress', resetIdleTimer);
+    ['mousemove', 'touchstart', 'keypress'].forEach(e => window.addEventListener(e, resetIdleTimer));
     inputField.addEventListener('focus', resetIdleTimer);
     resetIdleTimer();
 
@@ -218,11 +177,9 @@
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, width, height);
         ctx.font = fontSize + 'px monospace';
-
         for (let i = 0; i < drops.length; i++) {
             let drop = drops[i];
-            const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
-
+            const char = characters[Math.floor(Math.random() * characters.length)];
             ctx.fillStyle = 'rgba(0, 255, 51, 0.8)';
             ctx.fillText(char, drop.x, drop.y);
 
@@ -231,40 +188,29 @@
                     let point = skullTargetPoints[p];
                     if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
                         point.occupied = true;
-                        settledPoints.push({
-                            char: char,
-                            x: point.tx,
-                            y: point.ty,
-                            color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' 
-                        });
+                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' });
                         drop.y = Math.random() * 100 * -1;
                     }
                 }
             }
-
             drop.y += drop.speed;
-            if (drop.y > height) {
-                drop.y = Math.random() * 100 * -1;
-            }
+            if (drop.y > height) drop.y = Math.random() * 100 * -1;
         }
-
         for (let s = 0; s < settledPoints.length; s++) {
             const p = settledPoints[s];
             ctx.fillStyle = p.color;
             ctx.fillText(p.char, p.x, p.y);
         }
     }
-
     setInterval(draw, 33); 
-
-    window.addEventListener('resize', () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    });
+    window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
 
     // ==========================================
-    // THE AI LOGIC & TELEMETRY INTEGRATION
+    // THE DUMB TERMINAL SECURE API LOGIC
     // ==========================================
+    // PASTE YOUR GOOGLE SCRIPT WEB APP URL HERE.
+    const MASTER_PROXY_URL = "YOUR_GOOGLE_SCRIPT_URL_HERE"; 
+
     function appendMessage(role, text) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role}-msg`;
@@ -287,97 +233,29 @@
         
         appendMessage('user', rawInput);
         inputField.value = '';
-        
-        let finalPrompt = rawInput;
-        let useWebSearch = rawInput.startsWith('?');
-        
-        if (useWebSearch) {
-            const searchQuery = rawInput.substring(1).trim();
-            appendMessage('sys', '[Network] Querying Tavily live web data...');
-            
-            try {
-                const tavilyRes = await fetch('https://api.tavily.com/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        api_key: TAVILY_KEY,
-                        query: searchQuery,
-                        search_depth: "basic",
-                        include_answer: false
-                    })
-                });
-                
-                if (!tavilyRes.ok) throw new Error("Tavily API failed");
-                
-                const tavilyData = await tavilyRes.json();
-                const webContext = tavilyData.results.map(r => r.content).join('\n');
-                finalPrompt = `Based on the following live web search results:\n\n${webContext}\n\nAnswer this prompt: ${searchQuery}`;
-                
-            } catch (error) {
-                appendMessage('sys', `[Error] Tavily Search Failed: ${error.message}`);
-                return;
-            }
-        }
-
-        appendMessage('sys', '[Network] Pinging OBD2 Telemetry Bridge...');
-        let truckContext = "Telemetry offline or engine is off.";
-        try {
-            const telRes = await fetch(`${TELEMETRY_URL}?action=pull`);
-            if (telRes.ok) {
-                const telData = await telRes.json();
-                if (telData.status !== "offline") {
-                    truckContext = JSON.stringify(telData); 
-                }
-            }
-        } catch (e) {
-            appendMessage('sys', '[Warning] Telemetry Bridge unreachable.');
-        }
-
-        appendMessage('sys', '[System] Processing via Groq LPU Network (Llama 3)...');
-
-        const systemInstruction = `You are the AI onboard computer for a 2017 Chevy Colorado. Keep answers concise, direct, and formatted for an IT Lead. You have access to the vehicle's live OBD2 data. The current raw Torque Pro PID parameters are: ${truckContext}. (Note: k5 is Coolant Temp in Celsius, kc is Engine RPM, kd is Speed in km/h. Convert to Fahrenheit and MPH in your responses).`;
-        
-        // GROQ API ENDPOINT AND PAYLOAD
-        const groqUrl = `https://api.groq.com/openai/v1/chat/completions`;
-        
-        const groqBody = {
-            model: "llama-3.1-8b-instant",
-            messages: [
-                { role: "system", content: systemInstruction },
-                { role: "user", content: finalPrompt }
-            ]
-        };
+        appendMessage('sys', '[Network] Pinging Secure Cloud Proxy...');
 
         try {
-            const groqRes = await fetch(groqUrl, {
+            // We send it as text/plain to bypass strict browser CORS rules
+            const response = await fetch(MASTER_PROXY_URL, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${GROQ_KEY}`
-                },
-                body: JSON.stringify(groqBody)
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    prompt: rawInput,
+                    useWebSearch: rawInput.startsWith('?')
+                })
             });
 
-            // DIAGNOSTIC ERROR HANDLER
-            if (!groqRes.ok) {
-                let errorMsg = `HTTP ${groqRes.status}`;
-                try {
-                    const errData = await groqRes.json();
-                    errorMsg += ` - ${errData.error.message}`;
-                } catch (e) {
-                    errorMsg += ` - Unknown Server Rejection`;
-                }
-                throw new Error(errorMsg);
-            }
-
-            // EXTRACT Llama 3 RESPONSE
-            const groqData = await groqRes.json();
-            const aiText = groqData.choices[0].message.content;
+            const data = await response.json();
             
-            appendMessage('ai', aiText);
+            if (data.error) {
+                appendMessage('sys', `[Error] ${data.error}`);
+            } else {
+                appendMessage('ai', data.reply);
+            }
             
         } catch (error) {
-            appendMessage('sys', `[Error] Core Engine Offline: ${error.message}`);
+            appendMessage('sys', `[Fatal] Proxy Connection Lost: ${error.message}`);
         }
     }
 </script>
