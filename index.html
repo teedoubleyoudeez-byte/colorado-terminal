@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V8 // VOICE, SKULL & NEON</title>
+    <title>Colorado OS Console V7 // VOICE & SKULL</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
         :root {
-            --bg-color: #050505;
-            --panel-bg: rgba(10, 10, 10, 0.85);
+            --bg-color: #000000;
+            --panel-bg: rgba(10, 10, 10, 0.9);
             --text-color: #e0e0e0;
-            --accent-green: #39ff14; /* Upgraded to toxic neon green */
-            --accent-blue: #0ff;
+            --accent-green: #00ff33;
+            --accent-blue: #00bfff;
             --accent-amber: #ffaa00;
-            --matrix-font: 'Share Tech Mono', 'Courier New', monospace;
+            --matrix-font: 'Courier New', Courier, monospace;
         }
-
         body, html {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -29,41 +26,22 @@
             justify-content: center;
             align-items: center;
         }
-
-        /* The CRT Screen Grime */
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            pointer-events: none; 
-            z-index: 9999;
-            background: linear-gradient(
-                to bottom,
-                rgba(255,255,255,0),
-                rgba(255,255,255,0) 50%,
-                rgba(0,0,0,0.25) 50%,
-                rgba(0,0,0,0.25)
-            );
-            background-size: 100% 4px;
-        }
-
         #matrix-canvas {
             position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             z-index: 1;
         }
-
-        /* Clipped corners and stacked neon shadows */
         #console-wrapper {
             position: relative;
             width: 90vw;
             height: 85vh;
             background: var(--panel-bg);
-            border: 1px solid var(--accent-green);
-            clip-path: polygon(0 0, 95% 0, 100% 5%, 100% 100%, 5% 100%, 0 95%);
-            box-shadow: 
-                inset 0 0 20px rgba(57, 255, 20, 0.2),
-                0 0 40px rgba(57, 255, 20, 0.15);
+            border: 2px solid #222;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 51, 0.2);
             z-index: 10;
             display: flex;
             flex-direction: column;
@@ -71,134 +49,60 @@
             opacity: 1;
             transition: opacity 1s ease;
         }
-
-        #console-wrapper.dimmed { 
-            opacity: 0.10; 
-        }
-
-        /* Glitch text header */
+        #console-wrapper.dimmed { opacity: 0.15; }
         #header {
             text-align: center;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #fff;
-            padding: 15px;
-            border-bottom: 1px solid rgba(57, 255, 20, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 
-                0 0 5px #fff,
-                0 0 15px var(--accent-green),
-                0 0 30px var(--accent-green);
-            position: relative;
-        }
-
-        #header::before {
-            content: attr(data-text);
-            position: absolute;
-            left: 0; width: 100%;
-            text-shadow: 2px 0 red;
-            top: 15px;
-            color: white;
-            background: transparent;
-            overflow: hidden;
-            animation: glitch-anim 3s infinite linear alternate-reverse;
-            pointer-events: none;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip-path: inset(20% 0 80% 0); }
-            20% { clip-path: inset(60% 0 10% 0); }
-            40% { clip-path: inset(40% 0 50% 0); }
-            60% { clip-path: inset(80% 0 5% 0); }
-            80% { clip-path: inset(10% 0 70% 0); }
-            100% { clip-path: inset(30% 0 20% 0); }
-        }
-
-        #chat-box { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
             font-size: 1.2em;
+            font-weight: bold;
+            color: var(--accent-green);
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
         }
-
-        /* Custom Scrollbar for chat box */
-        #chat-box::-webkit-scrollbar { width: 8px; }
-        #chat-box::-webkit-scrollbar-track { background: transparent; border-left: 1px solid rgba(57,255,20,0.2); }
-        #chat-box::-webkit-scrollbar-thumb { background: var(--accent-green); }
-
-        .message { margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+        #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .message { margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; }
         .sys-msg { color: var(--accent-amber); font-style: italic; }
-        .user-msg { color: var(--accent-blue); text-shadow: 0 0 8px var(--accent-blue); }
-        .ai-msg { color: var(--accent-green); white-space: pre-wrap; text-shadow: 0 0 8px var(--accent-green); }
-        
+        .user-msg { color: var(--accent-blue); }
+        .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
         #input-area {
             display: flex;
             padding: 15px;
-            background: rgba(5, 5, 5, 0.9);
-            border-top: 1px solid rgba(57, 255, 20, 0.5);
-            gap: 15px;
+            background: rgba(20, 20, 20, 0.9);
+            border-top: 1px solid #333;
+            gap: 10px;
         }
-
         input[type="text"] {
             flex-grow: 1;
             padding: 15px;
-            font-size: 1.2em;
-            background: transparent;
+            font-size: 1.1em;
+            background: #000;
             color: #fff;
-            border: 1px solid #333;
-            border-radius: 0;
+            border: 1px solid #444;
+            border-radius: 8px;
             font-family: var(--matrix-font);
-            text-shadow: 0 0 5px var(--accent-green);
-            transition: border 0.3s;
         }
-
-        input[type="text"]:focus { 
-            outline: none; 
-            border-color: var(--accent-green); 
-            box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.2);
-        }
-
+        input[type="text"]:focus { outline: none; border-color: var(--accent-green); }
         button {
-            padding: 15px 25px;
-            font-size: 1.2em;
-            background: transparent;
-            color: var(--accent-green);
-            border: 1px solid var(--accent-green);
-            font-family: var(--matrix-font);
+            padding: 15px 20px;
+            font-size: 1.1em;
+            background: var(--accent-green);
+            color: #000;
+            border: none;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
+            transition: background 0.2s;
         }
-
-        button:hover { 
-            background: var(--accent-green); 
-            color: #000;
-            box-shadow: 0 0 15px var(--accent-green);
-        }
-        
-        button:active { transform: scale(0.98); }
-
+        button:active { background: #00cc29; }
         #mic-btn {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-        }
-
-        #mic-btn:hover {
             background: var(--accent-blue);
-            color: #000;
-            box-shadow: 0 0 15px var(--accent-blue);
+            font-size: 1.2em;
         }
-
         #mic-btn.listening {
-            background: #ff0055;
+            background: #ff0000; /* Turns red when active so you know it's hot */
             color: white;
-            border-color: #ff0055;
-            box-shadow: 0 0 20px #ff0055;
             animation: pulse 1s infinite;
         }
-
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -208,21 +112,17 @@
 </head>
 <body>
 
-    <!-- The CRT Scanline Overlay -->
-    <div class="scanlines"></div>
-
-    <!-- The Original Matrix Skull Canvas -->
     <canvas id="matrix-canvas"></canvas>
 
     <div id="console-wrapper">
-        <div id="header" data-text="COLORADO ONBOARD OS // terminal_v8">COLORADO ONBOARD OS // terminal_v8</div>
+        <div id="header">COLORADO ONBOARD OS // VEHICLE OBD VOICE & TEXT Ai</div>
         <div id="chat-box">
-            <div class="message sys-msg">[SYSTEM] Core online. Voice engine loaded. Giant skull protocol standing by.</div>
+            <div class="message sys-msg">System online. Voice engine loaded, OBD connected, and telemetry active.</div>
         </div>
         <div id="input-area">
             <input type="text" id="command-input" placeholder="Enter command or tap mic..." autocomplete="off">
-            <button id="mic-btn" onclick="startVoice()">MIC</button>
-            <button onclick="processCommand()">EXEC</button>
+            <button id="mic-btn" onclick="startVoice()">🎙️</button>
+            <button onclick="processCommand()">EXECUTE</button>
         </div>
     </div>
 
@@ -246,7 +146,7 @@
     for(let i = 0; i < columns; i++) { drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 }; }
 
     let settledPoints = []; 
-    // THE SKULL
+    // NEW MASSIVE BLOCKY SKULL MAP
     const skullMap = [
         "    $$$$$$$$    ",
         "  $$$$$$$$$$$$  ",
@@ -259,7 +159,7 @@
         "    $$ $$ $$    "
     ];
     const skullTargetPoints = [];
-    const skullScale = 2.5; 
+    const skullScale = 2.5; // CRANKED UP FOR HIGH VISIBILITY
     const mapWidth = skullMap[0].length;
     const mapHeight = skullMap.length;
     const startX = (width - mapWidth * fontSize * skullScale) / 2;
@@ -289,13 +189,13 @@
     resetIdleTimer();
 
     function draw() {
-        ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, width, height);
         ctx.font = fontSize + 'px monospace';
         for (let i = 0; i < drops.length; i++) {
             let drop = drops[i];
             const char = characters[Math.floor(Math.random() * characters.length)];
-            ctx.fillStyle = 'rgba(57, 255, 20, 0.8)';
+            ctx.fillStyle = 'rgba(0, 255, 51, 0.8)';
             ctx.fillText(char, drop.x, drop.y);
 
             if (systemIdle) {
@@ -303,7 +203,7 @@
                     let point = skullTargetPoints[p];
                     if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
                         point.occupied = true;
-                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: Math.random() > 0.95 ? '#ffaa00' : '#39ff14' });
+                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' });
                         drop.y = Math.random() * 100 * -1;
                     }
                 }
@@ -338,13 +238,13 @@
         
         recognition.onstart = function() {
             micBtn.classList.add('listening');
-            inputField.placeholder = "Awaiting verbal input...";
+            inputField.placeholder = "Listening...";
         };
         
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
             inputField.value = transcript;
-            processCommand();
+            processCommand(); // Auto-fires when you finish speaking
         };
         
         recognition.onerror = function(event) {
@@ -364,19 +264,13 @@
     // ==========================================
     // THE DUMB TERMINAL SECURE API LOGIC
     // ==========================================
-    // LEAVE YOUR GOOGLE SCRIPT URL EXACTLY AS IS
+    // PASTE YOUR GOOGLE SCRIPT WEB APP URL HERE.
     const MASTER_PROXY_URL = "https://script.google.com/macros/s/AKfycbymH_5fj7eVuurl2DGtiWBzydBI0riIR8HUDOIX_FrMxeEY6VV5IJDukNtmSy9XOGy7/exec"; 
 
     function appendMessage(role, text) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role}-msg`;
-        
-        let prefix = '';
-        if (role === 'user') prefix = 'travis@colorado:~# ';
-        if (role === 'sys') prefix = '[SYS] ';
-        if (role === 'ai') prefix = '[GROK] ';
-        
-        msgDiv.textContent = prefix + text;
+        msgDiv.textContent = role === 'user' ? `> ${text}` : text;
         chatBox.appendChild(msgDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
         resetIdleTimer(); 
@@ -395,7 +289,7 @@
         
         appendMessage('user', rawInput);
         inputField.value = '';
-        appendMessage('sys', 'Uplink established. Pinging Grok proxy...');
+        appendMessage('sys', '[Network] Pinging Secure Cloud Proxy...');
 
         try {
             const response = await fetch(MASTER_PROXY_URL, {
@@ -403,7 +297,7 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     prompt: rawInput,
-                    useWebSearch: rawInput.startsWith('?') // Triggers your Tavily integration
+                    useWebSearch: rawInput.startsWith('?')
                 })
             });
 
@@ -416,7 +310,7 @@
             }
             
         } catch (error) {
-            appendMessage('sys', `[Fatal] Proxy Connection Lost. Grok is unreachable: ${error.message}`);
+            appendMessage('sys', `[Fatal] Proxy Connection Lost: ${error.message}`);
         }
     }
 </script>
