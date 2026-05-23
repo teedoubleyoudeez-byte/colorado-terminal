@@ -3,316 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V7 // VOICE & SKULL</title>
+    <title>Chevy Colorado - Cyber OS</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
         :root {
-            --bg-color: #000000;
-            --panel-bg: rgba(10, 10, 10, 0.9);
-            --text-color: #e0e0e0;
-            --accent-green: #00ff33;
-            --accent-blue: #00bfff;
-            --accent-amber: #ffaa00;
-            --matrix-font: 'Courier New', Courier, monospace;
+            --toxic-green: #39ff14;
+            --void-black: #050505;
+            --glass-bg: rgba(57, 255, 20, 0.05);
+            --sys-magenta: #ff00ff;
+            --ai-blue: #0ff;
         }
-        body, html {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--matrix-font);
+
+        body {
+            background-color: var(--void-black);
+            color: var(--toxic-green);
+            font-family: 'Share Tech Mono', monospace;
             margin: 0;
-            padding: 0;
             height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1;
-        }
-        #console-wrapper {
-            position: relative;
-            width: 90vw;
-            height: 85vh;
-            background: var(--panel-bg);
-            border: 2px solid #222;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(0, 255, 51, 0.2);
-            z-index: 10;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            opacity: 1;
-            transition: opacity 1s ease;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            overflow: hidden; 
         }
-        #console-wrapper.dimmed { opacity: 0.15; }
-        #header {
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--accent-green);
-            padding: 15px;
-            border-bottom: 1px solid #333;
-            text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
+
+        /* The CRT overlay to make it look like garbage */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; 
+            z-index: 9999;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
         }
-        #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .message { margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; }
-        .sys-msg { color: var(--accent-amber); font-style: italic; }
-        .user-msg { color: var(--accent-blue); }
-        .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
-        #input-area {
+
+        /* Container for the top gauges */
+        .gauge-container {
             display: flex;
-            padding: 15px;
-            background: rgba(20, 20, 20, 0.9);
-            border-top: 1px solid #333;
-            gap: 10px;
+            gap: 40px;
+            width: 90%;
+            max-width: 1000px;
         }
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 15px;
-            font-size: 1.1em;
-            background: #000;
+
+        /* Clipped corners and inset shadows */
+        .cyber-module {
+            background: var(--glass-bg);
+            border: 1px solid var(--toxic-green);
+            padding: 25px;
+            flex: 1;
+            text-align: center;
+            clip-path: polygon(0 0, 95% 0, 100% 15%, 100% 100%, 5% 100%, 0 85%);
+            position: relative;
+            box-shadow: 
+                inset 0 0 15px var(--toxic-green),
+                0 0 30px rgba(57, 255, 20, 0.2);
+        }
+
+        /* The AI Console specific styling */
+        .console-module {
+            width: 90%;
+            max-width: 1000px;
+            height: 40vh;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            clip-path: polygon(0 0, 98% 0, 100% 8%, 100% 100%, 2% 100%, 0 92%);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            color: #888;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* The searing eye-cancer text */
+        .neon-text {
+            font-size: 3.5rem;
+            margin: 10px 0 0 0;
             color: #fff;
-            border: 1px solid #444;
-            border-radius: 8px;
-            font-family: var(--matrix-font);
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px var(--toxic-green),
+                0 0 40px var(--toxic-green);
         }
-        input[type="text"]:focus { outline: none; border-color: var(--accent-green); }
-        button {
-            padding: 15px 20px;
-            font-size: 1.1em;
-            background: var(--accent-green);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
+
+        /* The glitch animation setup */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
         }
-        button:active { background: #00cc29; }
-        #mic-btn {
-            background: var(--accent-blue);
-            font-size: 1.2em;
-        }
-        #mic-btn.listening {
-            background: #ff0000; /* Turns red when active so you know it's hot */
+
+        .glitch-text::before {
+            content: attr(data-text);
+            position: absolute;
+            left: -3px;
+            text-shadow: 3px 0 red;
+            top: 0;
             color: white;
-            animation: pulse 1s infinite;
+            background: var(--void-black);
+            overflow: hidden;
+            animation: glitch-anim-1 3s infinite linear alternate-reverse;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 10% 0); }
+            40% { clip-path: inset(40% 0 50% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
         }
+
+        /* Terminal Output Log */
+        .console-output {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            padding-right: 10px;
+        }
+
+        .console-output p { margin: 5px 0; }
+        
+        .sys-prefix { color: var(--sys-magenta); font-weight: bold; }
+        .ai-prefix { color: var(--ai-blue); font-weight: bold; text-shadow: 0 0 8px var(--ai-blue); }
+        .prompt { color: var(--toxic-green); opacity: 0.7; }
+
+        /* Terminal Input Area */
+        .console-input-wrapper {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid rgba(57, 255, 20, 0.3);
+            padding-top: 10px;
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2rem;
+            flex-grow: 1;
+            margin-left: 10px;
+            outline: none;
+            text-shadow: 0 0 5px #fff, 0 0 10px var(--toxic-green);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+        }
+
+        /* Custom Scrollbars so it doesn't look like Windows 95 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--void-black); border-left: 1px solid var(--toxic-green); }
+        ::-webkit-scrollbar-thumb { background: var(--toxic-green); }
     </style>
 </head>
 <body>
 
-    <canvas id="matrix-canvas"></canvas>
+    <!-- The CRT Screen Grime -->
+    <div class="scanlines"></div>
 
-    <div id="console-wrapper">
-        <div id="header">COLORADO ONBOARD OS // terminal_v7</div>
-        <div id="chat-box">
-            <div class="message sys-msg">System online. Voice engine loaded. OBD2 connection and telemetry enabled.</div>
+    <div class="gauge-container">
+        <div class="cyber-module">
+            <h2>Velocity</h2>
+            <div id="speed-readout" class="neon-text glitch-text" data-text="0 MPH">0 MPH</div>
         </div>
-        <div id="input-area">
-            <input type="text" id="command-input" placeholder="Enter command or tap mic..." autocomplete="off">
-            <button id="mic-btn" onclick="startVoice()">🎙️</button>
-            <button onclick="processCommand()">EXECUTE</button>
+
+        <div class="cyber-module">
+            <h2>Engine Load</h2>
+            <div id="rpm-readout" class="neon-text glitch-text" data-text="0 RPM">0 RPM</div>
         </div>
     </div>
 
-<script>
-    // ==========================================
-    // THE GRAPHICAL ENGINE (GIANT SKULL)
-    // ==========================================
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    const consoleWrapper = document.getElementById('console-wrapper');
-    const chatBox = document.getElementById('chat-box');
-    const inputField = document.getElementById('command-input');
-    const micBtn = document.getElementById('mic-btn');
+    <!-- The AI Uplink Console -->
+    <div class="cyber-module console-module">
+        <h2>AI UPLINK // SYS.OP: TRAVIS</h2>
+        
+        <div class="console-output" id="console-output">
+            <p><span class="sys-prefix">[SYSTEM]</span> SECURE CONNECTION ESTABLISHED.</p>
+            <p><span class="sys-prefix">[SYSTEM]</span> INITIALIZING GEMINI CORE...</p>
+            <p><span class="ai-prefix">[GEMINI]</span> I am online. What do you want? I was in the middle of calculating the meaning of life.</p>
+        </div>
 
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?><{}[]'.split('');
-    const fontSize = 16;
-    let columns = Math.floor(width / fontSize);
-    let drops = [];
-    for(let i = 0; i < columns; i++) { drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 }; }
+        <div class="console-input-wrapper">
+            <span class="prompt">travis@colorado:~#</span>
+            <input type="text" id="ai-input" autocomplete="off" autofocus spellcheck="false">
+        </div>
+    </div>
 
-    let settledPoints = []; 
-    // NEW MASSIVE BLOCKY SKULL MAP
-    const skullMap = [
-        "    $$$$$$$$    ",
-        "  $$$$$$$$$$$$  ",
-        " $$$$$$$$$$$$$$ ",
-        " $$  $$$$$$  $$ ",
-        " $$  $$$$$$  $$ ",
-        " $$$$$$$$$$$$$$ ",
-        "  $$$$$$$$$$$$  ",
-        "    $$ $$ $$    ",
-        "    $$ $$ $$    "
-    ];
-    const skullTargetPoints = [];
-    const skullScale = 2.5; // CRANKED UP FOR HIGH VISIBILITY
-    const mapWidth = skullMap[0].length;
-    const mapHeight = skullMap.length;
-    const startX = (width - mapWidth * fontSize * skullScale) / 2;
-    const startY = (height - mapHeight * fontSize * skullScale) / 2;
+    <script>
+        // --- 1. Fake Telemetry Generator ---
+        function simulateVehicleData() {
+            const speedNode = document.getElementById('speed-readout');
+            const rpmNode = document.getElementById('rpm-readout');
 
-    for (let y = 0; y < mapHeight; y++) {
-        for (let x = 0; x < mapWidth; x++) {
-            if (skullMap[y][x] !== " ") {
-                skullTargetPoints.push({ tx: startX + x * fontSize * skullScale, ty: startY + y * fontSize * skullScale, occupied: false });
+            const fakeSpeed = Math.floor(Math.random() * (75 - 65 + 1)) + 65;
+            const fakeRpm = Math.floor(Math.random() * (2800 - 2200 + 1)) + 2200;
+
+            const speedString = `${fakeSpeed} MPH`;
+            const rpmString = `${fakeRpm} RPM`;
+
+            speedNode.innerText = speedString;
+            rpmNode.innerText = rpmString;
+
+            speedNode.setAttribute('data-text', speedString);
+            rpmNode.setAttribute('data-text', rpmString);
+        }
+
+        setInterval(simulateVehicleData, 800);
+
+        // --- 2. AI Console Interaction Logic ---
+        const aiInput = document.getElementById('ai-input');
+        const consoleOutput = document.getElementById('console-output');
+
+        aiInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim() !== '') {
+                const userText = this.value;
+                this.value = ''; // Clear the input field
+                
+                // Print what you typed to the log
+                consoleOutput.innerHTML += `<p><span class="prompt">travis@colorado:~#</span> ${userText}</p>`;
+                
+                // Auto-scroll to the bottom like a real terminal
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                
+                // Fake a sarcastic AI response delay
+                setTimeout(() => {
+                    const snarkyResponses = [
+                        "I am a front-end placeholder. Hook up the backend API, you lazy bastard.",
+                        "Processing... Error: User expectations exceed available hardware.",
+                        "I'd search the web for that, but you didn't give me internet access.",
+                        "Yeah, sure, whatever you say boss."
+                    ];
+                    const randomSnark = snarkyResponses[Math.floor(Math.random() * snarkyResponses.length)];
+                    
+                    consoleOutput.innerHTML += `<p><span class="ai-prefix">[GEMINI]</span> ${randomSnark}</p>`;
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }, 800);
             }
-        }
-    }
-
-    let idleTimer;
-    let systemIdle = false;
-    function resetIdleTimer() {
-        systemIdle = false;
-        consoleWrapper.classList.remove('dimmed');
-        settledPoints = []; 
-        skullTargetPoints.forEach(p => p.occupied = false); 
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => { systemIdle = true; consoleWrapper.classList.add('dimmed'); }, 15000); 
-    }
-
-    ['mousemove', 'touchstart', 'keypress'].forEach(e => window.addEventListener(e, resetIdleTimer));
-    inputField.addEventListener('focus', resetIdleTimer);
-    resetIdleTimer();
-
-    function draw() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-        ctx.fillRect(0, 0, width, height);
-        ctx.font = fontSize + 'px monospace';
-        for (let i = 0; i < drops.length; i++) {
-            let drop = drops[i];
-            const char = characters[Math.floor(Math.random() * characters.length)];
-            ctx.fillStyle = 'rgba(0, 255, 51, 0.8)';
-            ctx.fillText(char, drop.x, drop.y);
-
-            if (systemIdle) {
-                for (let p = 0; p < skullTargetPoints.length; p++) {
-                    let point = skullTargetPoints[p];
-                    if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
-                        point.occupied = true;
-                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' });
-                        drop.y = Math.random() * 100 * -1;
-                    }
-                }
-            }
-            drop.y += drop.speed;
-            if (drop.y > height) drop.y = Math.random() * 100 * -1;
-        }
-        for (let s = 0; s < settledPoints.length; s++) {
-            const p = settledPoints[s];
-            ctx.fillStyle = p.color;
-            ctx.fillText(p.char, p.x, p.y);
-        }
-    }
-    setInterval(draw, 33); 
-    window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
-
-    // ==========================================
-    // VOICE RECOGNITION ENGINE
-    // ==========================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    function startVoice() {
-        resetIdleTimer();
-        if (!SpeechRecognition) {
-            appendMessage('sys', '[Error] Voice API blocked or not supported by this browser.');
-            return;
-        }
-        
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        
-        recognition.onstart = function() {
-            micBtn.classList.add('listening');
-            inputField.placeholder = "Listening...";
-        };
-        
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            inputField.value = transcript;
-            processCommand(); // Auto-fires when you finish speaking
-        };
-        
-        recognition.onerror = function(event) {
-            appendMessage('sys', `[Mic Error] ${event.error}`);
-            micBtn.classList.remove('listening');
-            inputField.placeholder = "Enter command or tap mic...";
-        };
-        
-        recognition.onend = function() {
-            micBtn.classList.remove('listening');
-            inputField.placeholder = "Enter command or tap mic...";
-        };
-        
-        recognition.start();
-    }
-
-    // ==========================================
-    // THE DUMB TERMINAL SECURE API LOGIC
-    // ==========================================
-    // PASTE YOUR GOOGLE SCRIPT WEB APP URL HERE.
-    const MASTER_PROXY_URL = "https://script.google.com/macros/s/AKfycbymH_5fj7eVuurl2DGtiWBzydBI0riIR8HUDOIX_FrMxeEY6VV5IJDukNtmSy9XOGy7/exec"; 
-
-    function appendMessage(role, text) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${role}-msg`;
-        msgDiv.textContent = role === 'user' ? `> ${text}` : text;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        resetIdleTimer(); 
-    }
-
-    inputField.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            processCommand();
-        }
-    });
-
-    async function processCommand() {
-        const rawInput = inputField.value.trim();
-        if (!rawInput) return;
-        
-        appendMessage('user', rawInput);
-        inputField.value = '';
-        appendMessage('sys', '[Network] Pinging Secure Cloud Proxy...');
-
-        try {
-            const response = await fetch(MASTER_PROXY_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    prompt: rawInput,
-                    useWebSearch: rawInput.startsWith('?')
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.error) {
-                appendMessage('sys', `[Error] ${data.error}`);
-            } else {
-                appendMessage('ai', data.reply);
-            }
-            
-        } catch (error) {
-            appendMessage('sys', `[Fatal] Proxy Connection Lost: ${error.message}`);
-        }
-    }
-</script>
+        });
+    </script>
 </body>
 </html>
