@@ -12,6 +12,7 @@
             --accent-green: #00ff33;
             --accent-blue: #00bfff;
             --accent-amber: #ffaa00;
+            --accent-red: #ff0000;
             --matrix-font: 'Courier New', Courier, monospace;
         }
         body, html {
@@ -47,9 +48,21 @@
             flex-direction: column;
             overflow: hidden;
             opacity: 1;
-            transition: opacity 1s ease;
+            transition: all 0.5s ease;
         }
         #console-wrapper.dimmed { opacity: 0.15; }
+        
+        /* THE CRITICAL ALERT OVERRIDE CSS */
+        #console-wrapper.critical-alert {
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.8);
+            border-color: var(--accent-red);
+            animation: klaxon 1s infinite alternate;
+        }
+        @keyframes klaxon {
+            from { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
+            to { box-shadow: 0 0 60px rgba(255, 0, 0, 1); }
+        }
+
         #header {
             text-align: center;
             font-size: 1.2em;
@@ -58,12 +71,17 @@
             padding: 15px;
             border-bottom: 1px solid #333;
             text-shadow: 0 0 5px rgba(0, 255, 51, 0.5);
+            transition: color 0.5s;
         }
+        .critical-alert #header { color: var(--accent-red); text-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+        
         #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; }
         .message { margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; }
         .sys-msg { color: var(--accent-amber); font-style: italic; }
         .user-msg { color: var(--accent-blue); }
         .ai-msg { color: var(--accent-green); white-space: pre-wrap; }
+        .alert-msg { color: var(--accent-red); font-weight: bold; font-size: 1.3em; text-transform: uppercase; background: rgba(255,0,0,0.1); padding: 10px; border-left: 4px solid red; }
+        
         #input-area {
             display: flex;
             padding: 15px;
@@ -94,20 +112,10 @@
             transition: background 0.2s;
         }
         button:active { background: #00cc29; }
-        #mic-btn {
-            background: var(--accent-blue);
-            font-size: 1.2em;
-        }
-        #mic-btn.listening {
-            background: #ff0000; /* Turns red when active so you know it's hot */
-            color: white;
-            animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        .critical-alert button { background: var(--accent-red); color: #fff; }
+        #mic-btn { background: var(--accent-blue); font-size: 1.2em; }
+        #mic-btn.listening { background: #ff0000; color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -117,7 +125,7 @@
     <div id="console-wrapper">
         <div id="header">COLORADO ONBOARD OS // VEHICLE OBD VOICE & TEXT Ai</div>
         <div id="chat-box">
-            <div class="message sys-msg">System online. Voice engine loaded. Standing by for OBD data and telemetry.</div>
+            <div class="message sys-msg">System online. Voice engine loaded. Predictive telemetry active.</div>
         </div>
         <div id="input-area">
             <input type="text" id="command-input" placeholder="Enter command or tap mic..." autocomplete="off">
@@ -128,6 +136,26 @@
 
 <script>
     // ==========================================
+    // TEXT TO SPEECH (THE VOCAL CORDS)
+    // ==========================================
+    function speakText(text) {
+        if (!('speechSynthesis' in window)) {
+            appendMessage('sys', '[Error] Your Android firmware stripped the TTS engine.');
+            return;
+        }
+        const cleanText = text.replace(/[*_#]/g, '');
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.pitch = 0.8; 
+        utterance.rate = 1.0;  
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const engVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en_US'));
+        if (engVoice) utterance.voice = engVoice;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // ==========================================
     // THE GRAPHICAL ENGINE (GIANT SKULL)
     // ==========================================
     const canvas = document.getElementById('matrix-canvas');
@@ -136,6 +164,7 @@
     const chatBox = document.getElementById('chat-box');
     const inputField = document.getElementById('command-input');
     const micBtn = document.getElementById('mic-btn');
+    const header = document.getElementById('header');
 
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
@@ -146,7 +175,6 @@
     for(let i = 0; i < columns; i++) { drops[i] = { x: i * fontSize, y: Math.random() * height * -1, speed: 2 + Math.random() * 5 }; }
 
     let settledPoints = []; 
-    // NEW MASSIVE BLOCKY SKULL MAP
     const skullMap = [
         "    $$$$$$$$    ",
         "  $$$$$$$$$$$$  ",
@@ -159,7 +187,7 @@
         "    $$ $$ $$    "
     ];
     const skullTargetPoints = [];
-    const skullScale = 2.5; // CRANKED UP FOR HIGH VISIBILITY
+    const skullScale = 2.5; 
     const mapWidth = skullMap[0].length;
     const mapHeight = skullMap.length;
     const startX = (width - mapWidth * fontSize * skullScale) / 2;
@@ -175,7 +203,10 @@
 
     let idleTimer;
     let systemIdle = false;
+    let isCritical = false; // State flag for alarms
+
     function resetIdleTimer() {
+        if (isCritical) return; // Don't dim screen if truck is dying
         systemIdle = false;
         consoleWrapper.classList.remove('dimmed');
         settledPoints = []; 
@@ -192,18 +223,21 @@
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, width, height);
         ctx.font = fontSize + 'px monospace';
+        let dropColor = isCritical ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 51, 0.8)';
+        let skullColor = isCritical ? '#ff0000' : '#00ff33';
+
         for (let i = 0; i < drops.length; i++) {
             let drop = drops[i];
             const char = characters[Math.floor(Math.random() * characters.length)];
-            ctx.fillStyle = 'rgba(0, 255, 51, 0.8)';
+            ctx.fillStyle = dropColor;
             ctx.fillText(char, drop.x, drop.y);
 
-            if (systemIdle) {
+            if (systemIdle || isCritical) {
                 for (let p = 0; p < skullTargetPoints.length; p++) {
                     let point = skullTargetPoints[p];
                     if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
                         point.occupied = true;
-                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: Math.random() > 0.95 ? '#ffaa00' : '#00ff33' });
+                        settledPoints.push({ char: char, x: point.tx, y: point.ty, color: skullColor });
                         drop.y = Math.random() * 100 * -1;
                     }
                 }
@@ -213,7 +247,7 @@
         }
         for (let s = 0; s < settledPoints.length; s++) {
             const p = settledPoints[s];
-            ctx.fillStyle = p.color;
+            ctx.fillStyle = isCritical ? '#ff0000' : p.color;
             ctx.fillText(p.char, p.x, p.y);
         }
     }
@@ -224,47 +258,22 @@
     // VOICE RECOGNITION ENGINE
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
     function startVoice() {
         resetIdleTimer();
-        if (!SpeechRecognition) {
-            appendMessage('sys', '[Error] Voice API blocked or not supported by this browser.');
-            return;
-        }
-        
+        if (!SpeechRecognition) { appendMessage('sys', '[Error] Voice API blocked.'); return; }
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
         recognition.interimResults = false;
-        
-        recognition.onstart = function() {
-            micBtn.classList.add('listening');
-            inputField.placeholder = "Listening...";
-        };
-        
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            inputField.value = transcript;
-            processCommand(); // Auto-fires when you finish speaking
-        };
-        
-        recognition.onerror = function(event) {
-            appendMessage('sys', `[Mic Error] ${event.error}`);
-            micBtn.classList.remove('listening');
-            inputField.placeholder = "Enter command or tap mic...";
-        };
-        
-        recognition.onend = function() {
-            micBtn.classList.remove('listening');
-            inputField.placeholder = "Enter command or tap mic...";
-        };
-        
+        recognition.onstart = function() { micBtn.classList.add('listening'); inputField.placeholder = "Listening..."; };
+        recognition.onresult = function(event) { inputField.value = event.results[0][0].transcript; processCommand(); };
+        recognition.onerror = function(event) { appendMessage('sys', `[Mic Error] ${event.error}`); micBtn.classList.remove('listening'); inputField.placeholder = "Enter command..."; };
+        recognition.onend = function() { micBtn.classList.remove('listening'); inputField.placeholder = "Enter command..."; };
         recognition.start();
     }
 
     // ==========================================
-    // THE DUMB TERMINAL SECURE API LOGIC
+    // THE NETWORK BRIDGE & PREDICTIVE AI
     // ==========================================
-    // PASTE YOUR GOOGLE SCRIPT WEB APP URL HERE.
     const MASTER_PROXY_URL = "https://script.google.com/macros/s/AKfycbyU7UXEqAj3Cic2e-RtqBO5pYSux-tgQ-Dl-dAFr-BrhoIIMMldOJHjb62gnx1eYgSX/exec"; 
 
     function appendMessage(role, text) {
@@ -273,45 +282,80 @@
         msgDiv.textContent = role === 'user' ? `> ${text}` : text;
         chatBox.appendChild(msgDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
-        resetIdleTimer(); 
+        if(role !== 'alert') resetIdleTimer(); 
     }
 
     inputField.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            processCommand();
-        }
+        if (event.key === "Enter") { event.preventDefault(); processCommand(); }
     });
 
+    // MANUAL COMMANDS
     async function processCommand() {
         const rawInput = inputField.value.trim();
         if (!rawInput) return;
         
+        // Secret code to clear alarms
+        if(rawInput.toLowerCase() === "clear") {
+            isCritical = false;
+            consoleWrapper.classList.remove('critical-alert');
+            header.textContent = "COLORADO ONBOARD OS // VEHICLE OBD VOICE & TEXT Ai";
+            inputField.value = '';
+            appendMessage('sys', '[System] Alerts cleared. Resuming nominal monitoring.');
+            return;
+        }
+
         appendMessage('user', rawInput);
         inputField.value = '';
-        appendMessage('sys', '[Network] Pinging Secure Cloud Proxy...');
+        appendMessage('sys', '[Network] Transmitting to Cloud API...');
 
         try {
             const response = await fetch(MASTER_PROXY_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    prompt: rawInput,
-                    useWebSearch: rawInput.startsWith('?')
-                })
+                body: JSON.stringify({ prompt: rawInput, useWebSearch: rawInput.startsWith('?'), isAutoDiagnostic: false })
             });
-
             const data = await response.json();
-            
             if (data.error) {
                 appendMessage('sys', `[Error] ${data.error}`);
+                speakText("API Connection Failure.");
             } else {
                 appendMessage('ai', data.reply);
+                speakText(data.reply);
             }
-            
         } catch (error) {
-            appendMessage('sys', `[Fatal] Proxy Connection Lost: ${error.message}`);
+            appendMessage('sys', `[Fatal] Proxy Connection Lost.`);
+            speakText("Proxy connection lost.");
         }
+    }
+
+    // ==========================================
+    // THE MISSING AUTO-DIAGNOSTIC LOOP
+    // ==========================================
+    setInterval(async () => {
+        try {
+            const response = await fetch(MASTER_PROXY_URL, {
+                method: 'POST',
+                body: JSON.stringify({ isAutoDiagnostic: true })
+            });
+            const data = await response.json();
+            
+            if (data.reply && !data.reply.includes("NOMINAL")) {
+                triggerRedAlert(data.reply);
+                speakText(data.reply); // <--- THE VOICE INJECTION FOR ALARMS
+            }
+        } catch (error) {
+            console.log("Background check failed to connect.");
+        }
+    }, 60000);
+
+    function triggerRedAlert(warning) {
+        if(!isCritical) {
+            isCritical = true;
+            consoleWrapper.classList.remove('dimmed');
+            consoleWrapper.classList.add('critical-alert');
+            header.textContent = "!!! IMMINENT MECHANICAL FAILURE DETECTED !!!";
+            systemIdle = true; 
+        }
+        appendMessage('alert', `>> DIAGNOSTIC OVERRIDE <<\n${warning}`);
     }
 </script>
 </body>
