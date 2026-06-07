@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Colorado OS Console V7 // VOICE & SKULL</title>
+    <title>Colorado OS Console V8 // GOD TIER</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -171,6 +171,7 @@
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+=?><{}[]'.split('');
     const fontSize = 16;
     let columns = Math.floor(width / fontSize);
+    
     // The "Cyber-Grime" Color Palette
     const palette = [
         'rgba(0, 191, 255, 0.8)',  // Electric Blue
@@ -186,7 +187,6 @@
 
     let drops = [];
     for(let i = 0; i < columns; i++) { 
-        // Assign a random color to each drop stream at initialization
         drops[i] = { 
             x: i * fontSize, 
             y: Math.random() * height * -1, 
@@ -249,24 +249,6 @@
             let drop = drops[i];
             const char = characters[Math.floor(Math.random() * characters.length)];
 
-            // Check if a wrist-command is waiting in the cache when the console fires up
-async function checkWristCache() {
-    try {
-        const response = await fetch(MASTER_PROXY_URL, {
-            method: 'POST',
-            body: JSON.stringify({ checkCache: true })
-        });
-        const data = await response.json();
-        if (data.reply && data.reply !== "CONSOLE ONLINE. NO PENDING WRIST COMMANDS.") {
-            appendMessage('ai', data.reply);
-            speakText(data.reply);
-        }
-    } catch (e) {
-        console.log("Failed to scan wrist cache.");
-    }
-}
-window.addEventListener('DOMContentLoaded', checkWristCache);
-            
             // If the truck is dying, override everything with blood red
             ctx.fillStyle = isCritical ? 'rgba(255, 0, 0, 0.8)' : drop.color;
             ctx.fillText(char, drop.x, drop.y);
@@ -276,11 +258,10 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
                     let point = skullTargetPoints[p];
                     if (!point.occupied && Math.abs(drop.x - point.tx) < fontSize / 2 && Math.abs(drop.y - point.ty) < fontSize / 2) {
                         point.occupied = true;
-                        // Make the settled skull stark white so it pops against the colors
+                        // Make the settled skull stark white so it pops
                         let skullColor = isCritical ? '#ff0000' : '#ffffff'; 
                         settledPoints.push({ char: char, x: point.tx, y: point.ty, color: skullColor });
                         
-                        // Reset the drop and give it a new color
                         drop.y = Math.random() * 100 * -1;
                         drop.color = getRandomColor();
                     }
@@ -288,7 +269,6 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
             }
             drop.y += drop.speed;
             
-            // When the drop hits the bottom, reset it to the top with a brand new color
             if (drop.y > height) {
                 drop.y = Math.random() * 100 * -1;
                 drop.color = getRandomColor();
@@ -302,8 +282,6 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
     }
     setInterval(draw, 33); 
     window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
-
-    
 
     // ==========================================
     // VOICE RECOGNITION ENGINE
@@ -325,6 +303,7 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
     // ==========================================
     // THE NETWORK BRIDGE & PREDICTIVE AI
     // ==========================================
+    // REPLACE THIS URL WITH YOUR NEW GOOGLE APPS SCRIPT WEB APP URL
     const MASTER_PROXY_URL = "https://script.google.com/macros/s/AKfycbwHxdyiNz6v4hP9ETXjfs9yzj29_rGMfhzAIKn9G2wM2LV3OYyxH3xrK-EuhmNKS_St/exec"; 
 
     function appendMessage(role, text) {
@@ -349,7 +328,7 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
         if(rawInput.toLowerCase() === "clear") {
             isCritical = false;
             consoleWrapper.classList.remove('critical-alert');
-            header.textContent = "COLORADO ONBOARD OS // VEHICLE OBD VOICE & TEXT Ai";
+            header.textContent = "COLORADO ONBOARD OS // VEHICLE OBD VOICE & TEXT Ai v8.2";
             inputField.value = '';
             appendMessage('sys', '[System] Alerts cleared. Resuming nominal monitoring.');
             return;
@@ -379,7 +358,7 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
     }
 
     // ==========================================
-    // THE MISSING AUTO-DIAGNOSTIC LOOP
+    // THE AUTO-DIAGNOSTIC LOOP
     // ==========================================
     setInterval(async () => {
         try {
@@ -391,7 +370,7 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
             
             if (data.reply && !data.reply.includes("NOMINAL")) {
                 triggerRedAlert(data.reply);
-                speakText(data.reply); // <--- THE VOICE INJECTION FOR ALARMS
+                speakText(data.reply);
             }
         } catch (error) {
             console.log("Background check failed to connect.");
@@ -409,14 +388,34 @@ window.addEventListener('DOMContentLoaded', checkWristCache);
             header.textContent = "!!! IMMINENT MECHANICAL FAILURE DETECTED !!!";
             systemIdle = true; 
             
-            // Wait 2.5 seconds to let the Text-to-Speech engine scream the mechanical warning first
             setTimeout(() => {
-                // Violently hijack the browser and force Android to natively open YT Music
                 window.location.href = "https://music.youtube.com/watch?v=p421WRS_qG0&autoplay=1";
             }, 2500);
         }
         appendMessage('alert', `>> DIAGNOSTIC OVERRIDE <<\n${warning}`);
     }
+
+    // ==========================================
+    // WRIST COMMAND PRE-FLIGHT CHECK
+    // ==========================================
+    async function checkWristCache() {
+        try {
+            const response = await fetch(MASTER_PROXY_URL, {
+                method: 'POST',
+                body: JSON.stringify({ checkCache: true })
+            });
+            const data = await response.json();
+            if (data.reply && data.reply !== "CONSOLE ONLINE. NO PENDING WRIST COMMANDS.") {
+                appendMessage('ai', data.reply);
+                speakText(data.reply);
+            }
+        } catch (e) {
+            console.log("Failed to scan wrist cache.");
+        }
+    }
+    // Fires once when the tablet loads the UI
+    window.addEventListener('DOMContentLoaded', checkWristCache);
+
 </script>
 </body>
 </html>
